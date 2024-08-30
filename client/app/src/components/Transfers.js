@@ -1,3 +1,5 @@
+// Component showing transfers information
+
 function Transfers({ playersIn, playersOut }) {
   const positionMap = {
     1: "GK",

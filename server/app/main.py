@@ -2,7 +2,6 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 from supabase import create_client, Client
-from dotenv import load_dotenv
 import os
 from pulp import LpMaximize, LpProblem, LpVariable, lpSum
 import logging
@@ -10,171 +9,30 @@ import asyncio
 import aiohttp
 import traceback
 
-load_dotenv('.env')
+## These keys allow read access to supabase to get player data
+## I will update player data at the beginning of every new game week
+SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2c3R1amJtd2Vmc25kZG5jYXZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjQ3ODgxMDEsImV4cCI6MjA0MDM2NDEwMX0.A4-m-2R0LcX264NUQc64B7FAtfCFNggorGfLq6xeV_k'
+SUPABASE_URL = 'https://hvstujbmwefsnddncava.supabase.co'
 
-key = os.getenv("SUPABASE_ANON_KEY")
-url = os.getenv("SUPABASE_URL")
 
-supabase: Client = create_client(url, key)
+# Initialize supabase client and fastapi app
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
 app = FastAPI()
-# Add CORS middleware to allow specific origins (or use "*" for all origins)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # List of allowed origins
+    allow_origins=["*"], 
     allow_credentials=True,
-    allow_methods=["*"],  # List of allowed methods
-    allow_headers=["*"],  # List of allowed headers
+    allow_methods=["*"],
+    allow_headers=["*"], 
 )
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def calculate_expected_points(player, fixture_difficulty):
-    # Extract relevant data
-    minutes = player.get('minutes', 0)
-    expected_goals = float(player.get('expected_goals', 0))
-    expected_assists = float(player.get('expected_assists', 0))
-    clean_sheets_per_90 = player.get('clean_sheets_per_90', 0)
-    expected_goals_conceded_per_90 = float(player.get('expected_goals_conceded_per_90', 0))
-    bonus = int(player.get('bonus', 0))
-    yellow_cards = int(player.get('yellow_cards', 0))
-    red_cards = int(player.get('red_cards', 0))
-    games_played = player.get('starts', 0)
-    saves_per_90 = float(player.get('saves_per_90', 0))
-    element_type = player.get('element_type', 0)
 
-    # Calculate expected values
-    if games_played > 0:
-        expected_bonus_per_game = bonus / games_played
-        expected_yellow_cards_per_game = yellow_cards / games_played
-        expected_red_cards_per_game = red_cards / games_played
-    else:
-        expected_bonus_per_game = 0
-        expected_yellow_cards_per_game = 0
-        expected_red_cards_per_game = 0
-
-    # Calculate expected points based on player position
-    if element_type == 1:  # Goalkeeper
-        expected_points = (
-            (minutes / 90) * 2 +
-            expected_goals * 10 +
-            expected_assists * 3 +
-            clean_sheets_per_90 * 4 -
-            (expected_goals_conceded_per_90 / 2) * 1 +
-            expected_bonus_per_game -
-            expected_yellow_cards_per_game * 1 -
-            expected_red_cards_per_game * 3 +
-            saves_per_90 / 3 * 1
-        )
-    elif element_type == 2:  # Defender
-        expected_points = (
-            (minutes / 90) * 2 +
-            expected_goals * 6 +
-            expected_assists * 3 +
-            clean_sheets_per_90 * 4 -
-            (expected_goals_conceded_per_90 / 2) * 1 +
-            expected_bonus_per_game -
-            expected_yellow_cards_per_game * 1 -
-            expected_red_cards_per_game * 3
-        )
-    elif element_type == 3:  # Midfielder
-        expected_points = (
-            (minutes / 90) * 2 +
-            expected_goals * 5 +
-            expected_assists * 3 +
-            clean_sheets_per_90 * 1 +
-            expected_bonus_per_game -
-            expected_yellow_cards_per_game * 1 -
-            expected_red_cards_per_game * 3
-        )
-    elif element_type == 4:  # Forward
-        expected_points = (
-            (minutes / 90) * 2 +
-            expected_goals * 4 +
-            expected_assists * 3 +
-            expected_bonus_per_game -
-            expected_yellow_cards_per_game * 1 -
-            expected_red_cards_per_game * 3
-        )
-    else:
-        expected_points = 0
-
-    # Adjust for fixture difficulty
-    final_expected_points = expected_points * (2.0 / fixture_difficulty)
-
-    return final_expected_points
-
-def fetch_fixture_difficulty(player_id):
-    url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
-    logger.info(f"Fetching fixture difficulty for player {player_id}")
-    response = requests.get(url)
-    fixtures = response.json().get('fixtures', [])
-    if fixtures:
-        difficulty = fixtures[0].get('difficulty', 3)
-        logger.info(f"Fixture difficulty for player {player_id}: {difficulty}")
-        return difficulty
-    logger.info(f"No fixture data found for player {player_id}. Defaulting to difficulty 3")
-    return 3
-
-# async def fetch_fixture_difficulty_async(session, player_id):
-#     url = f"https://fantasy.premierleague.com/api/element-summary/{player_id}/"
-#     async with session.get(url) as response:
-#         fixtures = await response.json()
-#         fixtures = fixtures.get('fixtures', [])
-#         if fixtures:
-#             difficulty = fixtures[0].get('difficulty', 3)
-#             return difficulty
-#         return 3
-
-def calculate_points_for_all_players(players):
-    results = []
-    logger.info(f"Calculating expected points for {len(players)} players...")
-    for player in players:
-        player_id = player['id']
-        fixture_difficulty = fetch_fixture_difficulty(player_id)
-        expected_points = calculate_expected_points(player, fixture_difficulty)
-        logger.info(f"Player {player['first_name']} {player['second_name']}: Expected Points = {expected_points}, Fixture Difficulty = {fixture_difficulty}")
-        results.append({
-            'player_id': player_id,
-            'player_name': f"{player['first_name']} {player['second_name']}",
-            'element_type': player['element_type'],
-            'expected_points': expected_points,
-            'fixture_difficulty': fixture_difficulty,
-            'team': player['team'],
-            'now_cost': float(player['now_cost']) / 10
-        })
-    logger.info("Finished calculating expected points.")
-    return results
-
-
-# async def calculate_points_for_all_players_async(players):
-#     results = []
-#     logger.info(f"Calculating expected points for {len(players)} players...")
-#     async with aiohttp.ClientSession() as session:
-#         tasks = []
-#         for player in players:
-#             player_id = player['id']
-#             tasks.append(fetch_fixture_difficulty_async(session, player_id))
-        
-#         fixture_difficulties = await asyncio.gather(*tasks)
-        
-#         for idx, player in enumerate(players):
-#             fixture_difficulty = fixture_difficulties[idx]
-#             expected_points = calculate_expected_points(player, fixture_difficulty)
-#             logger.info(f"Player {player['first_name']} {player['second_name']}: Expected Points = {expected_points}, Fixture Difficulty = {fixture_difficulty}")
-#             results.append({
-#                 'player_id': player['id'],
-#                 'player_name': f"{player['first_name']} {player['second_name']}",
-#                 'element_type': player['element_type'],
-#                 'expected_points': expected_points,
-#                 'fixture_difficulty': fixture_difficulty,
-#                 'team': player['team'],
-#                 'now_cost': float(player['now_cost']) / 10
-#             })
-#     logger.info("Finished calculating expected points.")
-#     return results
-
+# Fetches current team data for given id, and gameweek
+# free_transfers is passed through for the optimization process later
 def get_current_team_data(team_id, free_transfers, gameweek):
     url = f"https://fantasy.premierleague.com/api/entry/{team_id}/event/{gameweek}/picks/"
     logger.info(f"Fetching current team data for team {team_id} in gameweek {gameweek}...")
@@ -198,6 +56,8 @@ def get_current_team_data(team_id, free_transfers, gameweek):
         'total_value': hist['value']
     }
 
+
+# Calculates optimal XV given a current XV, no. of free transfers, and budget = total_value + bank
 def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, bank):
     try:
         # Calculate the available budget for the new team
@@ -301,6 +161,7 @@ def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, ba
         logger.info(f"Selected team value: {total_selected_value}")
         logger.info(f"Selected team: {[player['player_name'] for player in selected_team]}")
 
+        # Construct output arrays:
         original_team = [
             {
                 'name': player['player_name'],
@@ -345,6 +206,8 @@ def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, ba
         logger.error(f"Error during optimization: {e}")
         return {"error": str(e)}
 
+
+# API route called in the client that generates an optimal XV for the user based on their data
 @app.get("/optimize/{teamid}/{freetransfers}/{gameweek}")
 def read_root(teamid: str, freetransfers: int, gameweek: int):
     logger.info("Starting the FPL optimization process...")
@@ -355,28 +218,14 @@ def read_root(teamid: str, freetransfers: int, gameweek: int):
         if not team_data:
             return {"error": "Failed to fetch team data"}
         
-        # current = team_data['current_team']
-        # free = 15
-        # bank = 0
-        # value = 1000
-        
         current = team_data['current_team']
         free = team_data['free_transfers']
         bank = team_data['bank']
         value = team_data['total_value']
 
-        # Calculate player expected points
-        # logger.info("Fetching player data and calculating expected points...")
-        # response = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/")
-        # data = response.json()
-        # players = data['elements']
-        # new_players = calculate_points_for_all_players(players)
-
         # Fetch player data from Supabase instead of the FPL API
         logger.info("Fetching player data from Supabase...")
         response = supabase.table("players").select("*").execute()
-        # if response.error:
-        #     raise Exception(response.error.message)
         players = response.data
         logger.info(f"Total players fetched from Supabase: {len(players)}")
 
@@ -393,49 +242,3 @@ def read_root(teamid: str, freetransfers: int, gameweek: int):
         return {"error": f"{type(e).__name__}: {str(e)}"}
 
 
-def calculate_points_for_all_players_supabase(players):
-    results = []
-    logger.info(f"Calculating expected points for {len(players)} players...")
-    for player in players:
-        player_id = player['id']
-        fixture_difficulty = fetch_fixture_difficulty(player_id)
-        expected_points = calculate_expected_points(player, fixture_difficulty)
-        logger.info(f"Player {player['first_name']} {player['second_name']}: Expected Points = {expected_points}, Fixture Difficulty = {fixture_difficulty}")
-        
-        player_data = {
-            'player_id': player['id'],
-            'player_name': f"{player['first_name']} {player['second_name']}",
-            'element_type': player['element_type'],
-            'expected_points': expected_points,
-            'fixture_difficulty': fixture_difficulty,
-            'team': player['team'],
-            'now_cost': float(player['now_cost']) / 10
-        }
-        
-        results.append(player_data)
-    
-    response = supabase.table("players").upsert(results).execute()
-    if response.error:
-        raise Exception(response.error.message)
-    else:
-        print("No. of players upserted: ", len(response.data))
-    
-
-@app.get("/insert_player_data")
-def insert_player_data():
-    try:
-        # Fetch player data from the FPL API
-        logger.info("Fetching player data...")
-        response = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/")
-        data = response.json()
-        players = data['elements']
-
-        # Calculate expected points and insert data into Supabase
-        logger.info("Calculating points and inserting data into Supabase...")
-        calculate_points_for_all_players_supabase(players)
-
-        return {"status": "success", "message": "Player data inserted successfully"}
-
-    except Exception as e:
-        logger.error(f"Error in inserting player data: {e}")
-        return {"status": "error", "message": str(e)}

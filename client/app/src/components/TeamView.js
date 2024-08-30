@@ -1,4 +1,5 @@
-// Manually import SVGs
+// Component for team view with details
+
 import arsenal from "../crests/arsenal.svg";
 import astonVilla from "../crests/aston_villa.svg";
 import bournemouth from "../crests/bournemouth.svg";
@@ -21,54 +22,32 @@ import westHam from "../crests/west_ham.svg";
 import wolves from "../crests/wolves.svg";
 
 function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
-  const teamDict = {
-    1: "arsenal",
-    2: "aston_villa",
-    3: "bournemouth",
-    4: "brentford",
-    5: "brighton",
-    6: "chelsea",
-    7: "crystal_palace",
-    8: "everton",
-    9: "fulham",
-    10: "ipswich",
-    11: "leicester",
-    12: "liverpool",
-    13: "man_city",
-    14: "man_utd",
-    15: "newcastle",
-    16: "nottm_forest",
-    17: "southampton",
-    18: "spurs",
-    19: "west_ham",
-    20: "wolves",
-  };
-
   // Create an object to hold the imported SVGs
   const crests = {
-    arsenal,
-    aston_villa: astonVilla,
-    bournemouth,
-    brentford,
-    brighton,
-    chelsea,
-    crystal_palace: crystalPalace,
-    everton,
-    fulham,
-    ipswich,
-    leicester,
-    liverpool,
-    man_city: manCity,
-    man_utd: manUtd,
-    newcastle,
-    nottm_forest: nottmForest,
-    southampton,
-    spurs,
-    west_ham: westHam,
-    wolves,
+    1: arsenal,
+    2: astonVilla,
+    3: bournemouth,
+    4: brentford,
+    5: brighton,
+    6: chelsea,
+    7: crystalPalace,
+    8: everton,
+    9: fulham,
+    10: ipswich,
+    11: leicester,
+    12: liverpool,
+    13: manCity,
+    14: manUtd,
+    15: newcastle,
+    16: nottmForest,
+    17: southampton,
+    18: spurs,
+    19: westHam,
+    20: wolves,
   };
 
-  function PlayerRow({ players, position, teamDict, crests }) {
+  // Generates a row of players in a positions
+  function PlayerRow({ players, position, crests }) {
     return (
       <div className="flex justify-center">
         {players
@@ -79,11 +58,8 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
               className="flex flex-col items-center text-center p-1.5 text-xs font-bold w-1/5 space-y-1"
             >
               <img
-                src={crests[teamDict[player["team"]]]} // Use the correct crest or fallback to arsenal
-                alt={`${teamDict[player["team"]]} crest`}
-                onError={(e) => {
-                  console.log(e.target.error);
-                }} // Fallback to arsenal if the crest fails to load
+                src={crests[player["team"]]}
+                alt=""
               />
               <div className="w-4/5 rounded border border-slate-400 shadow-md shadow-stone-700">
                 <div className="bg-slate-50 border-b border-slate-400 rounded-t">
@@ -100,19 +76,18 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
     );
   }
 
-  // Calculate the sum of expected points for the original team
+  // Calculate team value and expected points
   const sumTeamPoints = Math.round(
     team.reduce((total, player) => {
-      return total + player.expected_points; // Access the 'expected_points' key
+      return total + player.expected_points;
     }, 0)
   );
   const sumTeamCost = Math.round(
     team.reduce((total, player) => {
-      return total + player.cost; // Access the 'cost' key
+      return total + player.cost; 
     }, 0)
   );
   
-
   return (
     <>
       {team.length > 0 && (
@@ -129,33 +104,29 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
             className="border-2 border-slate-500 rounded-lg py-7 shadow shadow-slate-500 h-4/5"
             style={{
               backgroundImage: `url(${require("../crests/football-pitch.png")})`,
-              backgroundSize: "cover", // Resize the background image to cover the entire container
-              backgroundRepeat: "no-repeat", // Do not repeat the image
-              backgroundPosition: "center", // Center the image
+              backgroundSize: "cover",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
             }}
           >
             <PlayerRow
               players={team}
               position={1}
-              teamDict={teamDict}
               crests={crests}
             />
             <PlayerRow
               players={team}
               position={2}
-              teamDict={teamDict}
               crests={crests}
             />
             <PlayerRow
               players={team}
               position={3}
-              teamDict={teamDict}
               crests={crests}
             />
             <PlayerRow
               players={team}
               position={4}
-              teamDict={teamDict}
               crests={crests}
             />
           </div>

@@ -17,33 +17,36 @@ function App() {
   const [playersOut, setPlayersOut] = useState([]);
   const [gameWeek, setGameWeek] = useState(0);
 
+  // Triggers /optimize endpoint and sets state variables with response
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Set inputs
     let id = teamId;
     let transfers = freeTransfers;
     let week = gameWeek;
-
-    // setTeamId("");
-    // setFreeTransfers(0);
     setLoading(true);
 
+    // Attempt to connect to api
     try {
       const response = await axios.get(
         `http://localhost:8000/optimize/${id}/${transfers}/${week}`
       );
 
+      // Store results
       const result = response.data;
       const originalTeam = result["original_team"];
       const optimizedTeam = result["selected_team"];
       const startingTeam = result["starting_11"];
       const points = result["expected_total_points"];
 
+      // Update variables
       setOriginalXV(originalTeam);
       setOPtimizedXV(optimizedTeam);
       setStartingXI(startingTeam);
       setExpectedPoints(Math.round(points));
 
+      // Calculate transfers in/out
       const playersNotInOptimized = findPlayersNotInOptimized(
         originalTeam,
         optimizedTeam
@@ -52,23 +55,19 @@ function App() {
         optimizedTeam,
         originalTeam
       );
-
       setPlayersIn(playersNotInOriginal);
       setPlayersOut(playersNotInOptimized);
+
     } catch (error) {
       console.error("An error occurred while fetching data:", error);
-      // Handle error based on error.response or error.message
+      // Various error handling
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         console.error(error.response.data);
         console.error(error.response.status);
         console.error(error.response.headers);
       } else if (error.request) {
-        // The request was made but no response was received
         console.error(error.request);
       } else {
-        // Something happened in setting up the request that triggered an Error
         console.error("Error", error.message);
       }
     } finally {
@@ -76,6 +75,7 @@ function App() {
     }
   };
 
+  // Calculates transfers out (can be reversed to calculate transfers in)
   function findPlayersNotInOptimized(original, optimized) {
     const optimizedIds = new Set(optimized.map((player) => player.name));
     console.log("Optimized IDs:", optimizedIds); // Debug log to check the IDs in the set
@@ -83,8 +83,8 @@ function App() {
     // Filter players not in optimized and sort by position
     const playersNotInOptimized = original
       .filter((player) => !optimizedIds.has(player.name))
-      .sort((a, b) => a.position - b.position); // Sort by position in non-decreasing order
-    console.log("Filtered Players:", playersNotInOptimized); // Debug log to check the filtered players
+      .sort((a, b) => a.position - b.position);
+    console.log("Filtered Players:", playersNotInOptimized);
 
     return playersNotInOptimized;
   }

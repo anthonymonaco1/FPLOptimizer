@@ -1,3 +1,5 @@
+// Header Component containing logo and form
+
 function Header({
   teamId,
   freeTransfers,
