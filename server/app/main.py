@@ -8,6 +8,7 @@ from pulp import LpMaximize, LpProblem, LpVariable, lpSum
 import logging
 import asyncio
 import aiohttp
+import traceback
 
 load_dotenv('.env')
 
@@ -344,13 +345,13 @@ def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, ba
         logger.error(f"Error during optimization: {e}")
         return {"error": str(e)}
 
-@app.get("/optimize/{teamid}/{freetransfers}")
-def read_root(teamid: str, freetransfers: int):
+@app.get("/optimize/{teamid}/{freetransfers}/{gameweek}")
+def read_root(teamid: str, freetransfers: int, gameweek: int):
     logger.info("Starting the FPL optimization process...")
 
     try:
         # Fetch current team data
-        team_data = get_current_team_data(teamid, freetransfers, 2)
+        team_data = get_current_team_data(teamid, freetransfers, gameweek-1)
         if not team_data:
             return {"error": "Failed to fetch team data"}
         
@@ -387,8 +388,9 @@ def read_root(teamid: str, freetransfers: int):
         return optimization_result
 
     except Exception as e:
-        logger.error(f"Error in FPL optimization process: {e}")
-        return {"error": str(e)}
+        logger.error(f"Error in FPL optimization process: {type(e).__name__}, {e}")
+        logger.error(traceback.format_exc())
+        return {"error": f"{type(e).__name__}: {str(e)}"}
 
 
 def calculate_points_for_all_players_supabase(players):
