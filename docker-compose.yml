@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  server:
+    build: server/
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./server:/app
+    env_file:
+      - ./server/.env
+
+  client:
+    build: client/
+    ports:
+      - "3000:3000"  # Corrected the port mapping for the React app.
+    volumes:
+      - ./client/app:/app  # Make sure this path matches where package.json is located
+    depends_on:
+      - server
