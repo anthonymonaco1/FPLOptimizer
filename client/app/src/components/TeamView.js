@@ -95,7 +95,7 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
         <div className="flex flex-col items-center w-2/5 space-y-4 h-full px-6">
           <div className="flex flex-col items-center p-2 h-1/10">
             <div className="underline text-lg font-bold">
-              {status == "current" ? "Current XV:" : "Optimized XV:"}
+              {status === "current" ? "Current XV:" : "Optimized XV:"}
             </div>
             <div className="font-bold text-lg">
               Value: £{sumTeamCost} million
@@ -133,7 +133,7 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
           </div>
           <div className="flex flex-row space-x-3 text-lg p-2 h-1/10">
             <div className="underline font-bold">Expected Points: </div>
-            {status == "current" ? (
+            {status === "current" ? (
               <div className="font-normal">{sumTeamPoints}</div>
             ) : (
               <div className="font-normal">{`${sumTeamPoints} - 4 * (${playersIn.length} - ${freeTransfers}) = ${expectedPoints}`}</div>
