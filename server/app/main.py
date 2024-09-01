@@ -168,7 +168,8 @@ def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, ba
                 'team': player['team'],
                 'position': player['element_type'],
                 'cost': player['now_cost'],
-                'expected_points': player['expected_points']
+                'expected_points': player['expected_points'],
+                'fixture_tag': player['next_fixture']
             }
             for player in players if player['player_id'] in current_team_ids
         ]
@@ -179,7 +180,8 @@ def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, ba
                 'team': player['team'],
                 'position': player['element_type'],
                 'cost': player['now_cost'],
-                'expected_points': player['expected_points']
+                'expected_points': player['expected_points'],
+                'fixture_tag': player['next_fixture']
             }
             for player in selected_team
         ]
@@ -190,7 +192,8 @@ def optimize_fpl_team(players, current_team_ids, free_transfers, total_value, ba
                 'team': player['team'],
                 'position': player['element_type'],
                 'cost': player['now_cost'],
-                'expected_points': player['expected_points']
+                'expected_points': player['expected_points'],
+                'fixture_tag': player['next_fixture']
             }
             for player in starting_11 
         ]

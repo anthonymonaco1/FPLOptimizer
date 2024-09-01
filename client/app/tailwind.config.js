@@ -13,6 +13,15 @@ module.exports = {
       width: {
         '3/8': '37.5%'
       },
+      minWidth: {
+        '1/4': '25%',
+        '1/5': '20%'
+      },
+      maxWidth: {
+        '1/4': '25%',
+        '1/5': '20%',
+        '1/3': '33%'
+      },
       borderColor: {
         'silver': '#BFBFBF'
       }

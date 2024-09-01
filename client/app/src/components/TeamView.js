@@ -55,7 +55,7 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
           .map((player, index) => (
             <div
               key={`${player.id}-${index}`}
-              className="flex flex-col items-center text-center p-1.5 text-xs font-bold w-1/5 space-y-1"
+              className="flex flex-col items-center text-center p-1 text-xs font-bold min-w-1/5 max-w-1/3 space-y-1"
             >
               <img
                 src={crests[player["team"]]}
@@ -65,7 +65,8 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
                 <div className="bg-slate-50 border-b border-slate-400 rounded-t">
                   {player.name}
                 </div>
-                <div className="bg-slate-50">£{player.cost}</div>
+                <div className="bg-slate-50 border-b border-slate-400">£{player.cost}</div>
+                <div className="bg-slate-50">{player.fixture_tag}</div>
                 <div className="bg-slate-300 border-t border-slate-400 rounded-b">
                   {Math.round(player.expected_points)}
                 </div>
@@ -91,7 +92,7 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
   return (
     <>
       {team.length > 0 && (
-        <div className="flex flex-col items-center w-3/8 space-y-4 h-full">
+        <div className="flex flex-col items-center w-2/5 space-y-4 h-full px-6">
           <div className="flex flex-col items-center p-2 h-1/10">
             <div className="underline text-lg font-bold">
               {status == "current" ? "Current XV:" : "Optimized XV:"}
@@ -101,7 +102,7 @@ function TeamView({ team, status, playersIn, freeTransfers, expectedPoints }) {
             </div>
           </div>
           <div
-            className="border-2 border-slate-500 rounded-lg py-7 shadow shadow-slate-500 h-4/5"
+            className="border-2 border-slate-500 rounded-lg p-4 shadow shadow-slate-500 h-4/5 space-y-1"
             style={{
               backgroundImage: `url(${require("../crests/football-pitch.png")})`,
               backgroundSize: "cover",
