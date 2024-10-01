@@ -4,6 +4,7 @@ import { RotatingLines } from "react-loader-spinner";
 import TeamView from "./components/TeamView";
 import Transfers from "./components/Transfers";
 import Header from "./components/Header";
+import InfoMessage from "./components/InfoMessage";
 
 function App() {
   const [loading, setLoading] = useState(false);
@@ -57,7 +58,6 @@ function App() {
       );
       setPlayersIn(playersNotInOriginal);
       setPlayersOut(playersNotInOptimized);
-
     } catch (error) {
       console.error("An error occurred while fetching data:", error);
       // Various error handling
@@ -100,9 +100,16 @@ function App() {
         setGameWeek={setGameWeek}
         handleSubmit={handleSubmit}
       />
-      <div className="flex flex-col w-full h-7/8 items-center bg-slate-50 space-y-2 pt-3">
+      <div
+        className={`flex flex-col w-full h-7/8 items-center bg-slate-50 space-y-2 pt-3 ${
+          originalXV.length ===  0 && optimizedXV.length === 0
+            ? "justify-center"
+            : ""
+        }`}
+      >
         {loading ? (
-          <div className="flex flex-1 w-full items-center justify-center">
+          <div className="flex flex-1 flex-col w-full items-center justify-center">
+            <h1 className="text-2xl font-bold mb-4 text-purple-800 text-center">Optimizing...</h1>
             <RotatingLines
               visible={true}
               height="100"
@@ -113,28 +120,28 @@ function App() {
               ariaLabel="rotating-lines-loading"
             />
           </div>
-        ) : (
+        ) : originalXV.length > 0 && optimizedXV.length > 0 ? (
           <div className="flex flex-row flex-1 w-full h-7/8">
-            {originalXV.length > 0 && (
-              <TeamView
-                team={originalXV}
-                status={"current"}
-                playersIn={playersIn}
-                freeTransfers={freeTransfers}
-                expectedPoints={expectedPoints}
-              />
-            )}
+            <TeamView
+              team={originalXV}
+              status={"current"}
+              playersIn={playersIn}
+              freeTransfers={freeTransfers}
+              expectedPoints={expectedPoints}
+            />
+
             <Transfers playersIn={playersIn} playersOut={playersOut} />
-            {optimizedXV.length > 0 && (
-              <TeamView
-                team={optimizedXV}
-                status={"optimized"}
-                playersIn={playersIn}
-                freeTransfers={freeTransfers}
-                expectedPoints={expectedPoints}
-              />
-            )}
+
+            <TeamView
+              team={optimizedXV}
+              status={"optimized"}
+              playersIn={playersIn}
+              freeTransfers={freeTransfers}
+              expectedPoints={expectedPoints}
+            />
           </div>
+        ) : (
+          <InfoMessage />
         )}
       </div>
     </div>
